@@ -1,0 +1,18 @@
+{
+  "id": "000",
+  "title": "Example — how the studio works",
+  "status": "демо-эпизод шаблона: можно смотреть, менять и удалять",
+  "settings": { "fps": 30, "width": 1920, "height": 1080, "leadIn": 0.5, "gap": 0.35, "tail": 2, "transitionFrames": 12 },
+  "voices": {
+    "ANNA": { "placeholder": { "voice": "Samantha", "rate": 175 } },
+    "MAX": { "placeholder": { "voice": "Daniel", "rate": 170 } }
+  },
+  "hero": [],
+  "assets": {},
+  "lines": [],
+  "scenes": [],
+  "overlays": [],
+  "music": [],
+  "sfx": [],
+  "chapters": []
+}

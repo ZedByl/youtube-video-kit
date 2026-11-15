@@ -1,0 +1,171 @@
+{
+  "block": {
+    "id": "1",
+    "title": "Scene library"
+  },
+  "status": "demo",
+  "assets": {},
+  "lines": [
+    {
+      "id": "L101",
+      "speaker": "ANNA",
+      "text": "Numbers get a counter. From two thousand five hundred down to seventy two."
+    },
+    {
+      "id": "L102",
+      "speaker": "MAX",
+      "text": "Dates get a timeline, and every milestone appears exactly when the voice names it: first January, then October, then December."
+    },
+    {
+      "id": "L103",
+      "speaker": "ANNA",
+      "text": "Then and now is a split. Missing footage stays visible as a placeholder, so you always know what is left to find."
+    },
+    {
+      "id": "L104",
+      "speaker": "MAX",
+      "text": "Rules and advice become a checklist."
+    },
+    {
+      "id": "L105",
+      "speaker": "ANNA",
+      "text": "Who knew whom is a network: the founder first, then the partner and the rival."
+    },
+    {
+      "id": "L106",
+      "speaker": "ANNA",
+      "text": "And the words of a real person become a quote, always with a source."
+    },
+    {
+      "id": "L107",
+      "speaker": "MAX",
+      "text": "That is the whole idea. Write the script, anchor the scenes, check, render, watch, fix.",
+      "pauseAfter": 1
+    }
+  ],
+  "scenes": [
+    {
+      "id": "S101",
+      "at": "L101",
+      "type": "stat",
+      "from": 2500,
+      "to": 72,
+      "prefix": "~",
+      "label": "workers",
+      "fromLabel": "1989",
+      "toLabel": "1994"
+    },
+    {
+      "id": "S102",
+      "at": "L102",
+      "type": "timeline",
+      "title": "1990 — three paths",
+      "items": [
+        {
+          "year": "Jan",
+          "label": "First move",
+          "at": "L102+2.4"
+        },
+        {
+          "year": "Oct",
+          "label": "Second move",
+          "at": "L102+3.6"
+        },
+        {
+          "year": "Dec",
+          "label": "Third move",
+          "at": "L102+4.6"
+        }
+      ]
+    },
+    {
+      "id": "S103",
+      "at": "L103",
+      "type": "split",
+      "left": {
+        "placeholder": "Archive, 1960s",
+        "label": "Then"
+      },
+      "right": {
+        "placeholder": "Same place today",
+        "label": "Now"
+      }
+    },
+    {
+      "id": "S104",
+      "at": "L104",
+      "type": "checklist",
+      "title": "Before you publish",
+      "items": [
+        "Every fact has a source",
+        "Every image has a license",
+        "No placeholders left"
+      ],
+      "mark": "check"
+    },
+    {
+      "id": "S105",
+      "at": "L105",
+      "type": "network",
+      "title": "Who knew whom",
+      "nodes": [
+        {
+          "id": "a",
+          "label": "The founder",
+          "sub": "1845",
+          "x": 25,
+          "y": 50,
+          "primary": true
+        },
+        {
+          "id": "b",
+          "label": "The partner",
+          "x": 60,
+          "y": 30
+        },
+        {
+          "id": "c",
+          "label": "The rival",
+          "x": 70,
+          "y": 70
+        }
+      ],
+      "links": [
+        {
+          "from": "a",
+          "to": "b"
+        },
+        {
+          "from": "a",
+          "to": "c",
+          "dashed": true
+        }
+      ],
+      "shown": 1
+    },
+    {
+      "id": "S106",
+      "at": "L106",
+      "type": "quote",
+      "text": "Write the script first. The pictures will follow.",
+      "author": "A real person, with a source"
+    },
+    {
+      "id": "S107",
+      "at": "L107",
+      "type": "bigDate",
+      "text": "script",
+      "morphTo": "video",
+      "morphAt": 0.55
+    }
+  ],
+  "overlays": [],
+  "music": [],
+  "sfx": [],
+  "chapters": [
+    {
+      "at": "L101",
+      "title": "Scene library"
+    }
+  ]
+}

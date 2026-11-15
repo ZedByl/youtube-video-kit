@@ -1,0 +1,41 @@
+{
+  "name": "video-kit-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Студия монтажа: сборка видео из сценария и озвучки на Remotion",
+  "scripts": {
+    "studio": "remotion studio",
+    "setup:browser": "remotion browser ensure && mkdir -p ~/Library/Caches/video-kit-studio && rm -rf ~/Library/Caches/video-kit-studio/chrome-headless-shell && cp -R node_modules/.remotion/chrome-headless-shell ~/Library/Caches/video-kit-studio/",
+    "tts:placeholder": "tsx scripts/tts-placeholder.ts",
+    "tts:elevenlabs": "tsx scripts/tts-elevenlabs.ts",
+    "timeline": "tsx scripts/build-timeline.ts",
+    "where": "tsx scripts/where.ts",
+    "check": "tsx scripts/check.ts",
+    "meta": "tsx scripts/export-meta.ts",
+    "render": "remotion render",
+    "render:block": "tsx scripts/render-block.ts",
+    "render:cta": "tsx scripts/render-cta.ts",
+    "sfx:cta": "tsx scripts/cta-sfx.ts",
+    "qa": "tsx scripts/qa-block.ts",
+    "find-assets": "tsx scripts/find-assets.ts",
+    "still": "remotion still",
+    "typecheck": "tsc --noEmit",
+    "finalize": "tsx scripts/finalize.ts"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "@remotion/google-fonts": "4.0.539",
+    "d3-geo": "3.1.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.539"
+  },
+  "devDependencies": {
+    "@types/d3-geo": "3.1.1",
+    "@types/geojson": "7946.0.16",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

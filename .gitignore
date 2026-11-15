@@ -1,0 +1,7 @@
+.env
+.DS_Store
+.obsidian/workspace*
+.obsidian/cache
+.idea/
+.vscode/
+assets/cta/*.mov

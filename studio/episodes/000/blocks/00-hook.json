@@ -1,0 +1,35 @@
+{
+  "block": { "id": "0", "title": "Hook" },
+  "status": "demo",
+  "assets": {},
+  "lines": [
+    { "id": "L001", "speaker": "ANNA", "text": "July 1969. Two cities, nine hundred kilometres apart, are waiting for the same signal." },
+    { "id": "L002", "speaker": "MAX", "text": "And nobody in either city knows that the *answer* is already sitting in a drawer.", "pauseAfter": 0.6 },
+    { "id": "L003", "speaker": "ANNA", "text": "This is a demo episode. It shows how a script turns into scenes.", "pauseBefore": 3.5 },
+    { "id": "L004", "speaker": "MAX", "text": "Every line of the script is one voice file. Every scene is anchored to a line." }
+  ],
+  "scenes": [
+    { "id": "S001", "at": "start", "type": "bigDate", "text": "7.1969", "sub": "two cities · one signal" },
+    {
+      "id": "S002",
+      "at": "L002",
+      "type": "map",
+      "view": { "center": [8, 50.5], "scale": 2600, "toScale": 3000 },
+      "active": ["DEU", "FRA"],
+      "points": [
+        { "name": "Paris", "coord": [2.35, 48.86], "at": "L002" },
+        { "name": "Berlin", "coord": [13.4, 52.52], "primary": true, "at": "L002+1.2" }
+      ],
+      "routes": [{ "from": [2.35, 48.86], "to": [13.4, 52.52], "label": "900 km", "at": "L002+2" }]
+    },
+    { "id": "S003", "at": "L002:end+0.3", "type": "titleCard", "subtitle": "Studio demo", "transition": "dip" },
+    { "id": "S004", "at": "L003", "type": "placeholder", "label": "Archive photo of the hero", "note": "find on Wikimedia Commons: npm run find-assets", "mood": "archive" }
+  ],
+  "overlays": [
+    { "id": "O001", "at": "L003+0.5", "duration": 4, "type": "speakerTag", "speaker": "ANNA", "role": "Host" },
+    { "id": "O002", "at": "L004+0.3", "duration": 4, "type": "speakerTag", "speaker": "MAX", "role": "Co-host" }
+  ],
+  "music": [],
+  "sfx": [],
+  "chapters": [{ "at": "start", "title": "Hook" }]
+}

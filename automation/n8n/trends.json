@@ -1,0 +1,583 @@
+{
+  "name": "channel — тренды конкурентов → GitHub",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "6bf9e37e-a97f-40aa-b96c-09c255fa9b53",
+      "name": "Каждый понедельник 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "43327390-6c26-4458-a4bc-3c7f492f5336",
+      "name": "Запуск вручную",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8b989875-d681-4556-8da6-273b764960ed",
+              "name": "githubOwner",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "01877320-1d0f-4a7d-99e6-e5160882c4a1",
+              "name": "githubRepo",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "c1c81307-b607-4406-9506-7e56233a3738",
+              "name": "branch",
+              "value": "main",
+              "type": "string"
+            },
+            {
+              "id": "d5db0c71-1515-42f3-8a68-159f4ff76184",
+              "name": "minScore",
+              "value": 2,
+              "type": "number"
+            },
+            {
+              "id": "3f6b2a1e-9c4d-4e7a-8b5f-2d1c0e9a7b64",
+              "name": "minMedian",
+              "value": 1000,
+              "type": "number"
+            },
+            {
+              "id": "81237af5-d4d1-48d8-afaf-1aad82abb14d",
+              "name": "commentVideos",
+              "value": 5,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e8c2fe80-0eda-401f-b1b5-d87798eaadf8",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Каналы-ориентиры. Источник правды — automation/n8n/channels.json; при правке обновить и здесь.\n// id (UC…) приоритетнее handle, если заполнен.\nconst channels = [\n  { \"group\": \"Прямые конкуренты\", \"name\": \"Example Channel\", \"handle\": \"@example\", \"id\": \"\" }\n];\n\nreturn channels.map(c => ({ json: c }));\n"
+      },
+      "id": "98361344-584d-499a-bd6e-fa80aa81e422",
+      "name": "Channels list",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/channels",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet,contentDetails,statistics"
+            },
+            {
+              "name": "={{ $json.id ? 'id' : 'forHandle' }}",
+              "value": "={{ $json.id || $json.handle }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "08851ca2-7cdb-420f-ad57-530cb9cfcbfb",
+      "name": "YT resolve channel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "youtubeApiKey",
+          "name": "YouTube API key"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// HTTP-нода отдаёт ответы в том же порядке, что и входные каналы\nconst list = $('Channels list').all();\nconst out = [];\n$input.all().forEach((item, i) => {\n  const ch = (item.json.items || [])[0];\n  if (!ch) return;\n  out.push({\n    json: {\n      ...list[i].json,\n      channelId: ch.id,\n      title: ch.snippet.title,\n      subscribers: Number(ch.statistics.subscriberCount || 0),\n      // UULF… — только длинные видео канала (без Shorts): иначе у каналов с частыми Shorts\n      // в последние 50 загрузок не попадает ни одного видео длиннее 3 минут\n      uploads: 'UULF' + ch.id.slice(2),\n    },\n  });\n});\nif (!out.length) throw new Error('Ни один канал не найден — проверьте handles в Channels list');\nreturn out;\n"
+      },
+      "id": "b5e6a87b-4c51-4e5e-9867-c8f50dc1e02b",
+      "name": "Uploads playlists",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/playlistItems",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "contentDetails"
+            },
+            {
+              "name": "playlistId",
+              "value": "={{ $json.uploads }}"
+            },
+            {
+              "name": "maxResults",
+              "value": "50"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "eaab4f27-1ae9-4075-a429-761ab9fbc51f",
+      "name": "YT recent uploads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "youtubeApiKey",
+          "name": "YouTube API key"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chans = $('Uploads playlists').all();\nreturn $input.all()\n  .map((item, i) => ({\n    json: {\n      channelId: chans[i].json.channelId,\n      ids: (item.json.items || []).map(v => v.contentDetails.videoId).join(','),\n    },\n  }))\n  .filter(x => x.json.ids);\n"
+      },
+      "id": "1d406fef-8a18-4c1a-bc29-4eefe1ee2a28",
+      "name": "Video id batches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet,statistics,contentDetails"
+            },
+            {
+              "name": "id",
+              "value": "={{ $json.ids }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ee0cf0a2-3d50-4de8-ab22-6342eaf95b03",
+      "name": "YT video stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        300
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "youtubeApiKey",
+          "name": "YouTube API key"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// outlier score = просмотры / медиана канала; velocity = просмотры / дни с публикации.\n// Отбрасываем видео короче 3 минут (Shorts) и моложе 3 дней (ещё не набрали просмотры).\n// У каналов с медианой ниже minMedian score шумит (271 просмотр медианы → 6 тыс. дают score 24),\n// поэтому их видео не идут в outliers/fresh, а выводятся отдельно в smallTop.\nconst cfg = $('Config').first().json;\nconst minScore = Number(cfg.minScore || 2);\nconst minMedian = Number(cfg.minMedian ?? 1000);\nconst now = $now.toMillis();\n\nconst duration = iso => {\n  const m = /PT(?:(\\d+)H)?(?:(\\d+)M)?(?:(\\d+)S)?/.exec(iso || '') || [];\n  return (Number(m[1]) || 0) * 3600 + (Number(m[2]) || 0) * 60 + (Number(m[3]) || 0);\n};\nconst median = arr => {\n  const s = [...arr].sort((a, b) => a - b);\n  const n = s.length;\n  if (!n) return 0;\n  return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2;\n};\n\nconst byChannel = {};\nfor (const item of $input.all()) {\n  for (const v of item.json.items || []) (byChannel[v.snippet.channelId] ||= []).push(v);\n}\n\nconst channels = [];\nconst videos = [];\nfor (const c of $('Uploads playlists').all().map(i => i.json)) {\n  const vs = (byChannel[c.channelId] || [])\n    .map(v => {\n      const ageDays = Math.max((now - Date.parse(v.snippet.publishedAt)) / 86400000, 1);\n      const views = Number(v.statistics.viewCount || 0);\n      return {\n        id: v.id,\n        title: v.snippet.title,\n        channel: c.name,\n        group: c.group,\n        publishedAt: v.snippet.publishedAt.slice(0, 10),\n        ageDays,\n        views,\n        velocity: views / ageDays,\n        durationSec: duration(v.contentDetails.duration),\n      };\n    })\n    .filter(v => v.durationSec >= 180 && v.ageDays >= 3);\n  const med = median(vs.map(v => v.views));\n  vs.forEach(v => { v.score = med ? v.views / med : 0; });\n  channels.push({\n    name: c.name,\n    group: c.group,\n    title: c.title,\n    subscribers: c.subscribers,\n    analyzed: vs.length,\n    median: med,\n    small: med > 0 && med < minMedian,\n    best: vs.reduce((m, v) => Math.max(m, v.score), 0),\n  });\n  videos.push(...vs);\n}\n\nconst small = new Set(channels.filter(c => c.small).map(c => c.name));\nconst byScore = (a, b) => b.score - a.score;\nconst main = videos.filter(v => !small.has(v.channel));\nconst outliers = main.filter(v => v.score >= minScore).sort(byScore).slice(0, 25);\nconst fresh = main.filter(v => v.ageDays <= 30).sort(byScore).slice(0, 10);\n// По 3 лучших видео с каждого малого канала — для справки, без комментариев\nconst smallTop = [...small].flatMap(name => videos.filter(v => v.channel === name).sort(byScore).slice(0, 3));\n\nreturn [{ json: { minScore, minMedian, channels, outliers, fresh, smallTop } }];\n"
+      },
+      "id": "c3f9020c-8d8d-4258-b7ed-706d200a9232",
+      "name": "Score videos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const n = Number($('Config').first().json.commentVideos || 5);\nreturn $('Score videos').first().json.outliers.slice(0, n).map(v => ({ json: { videoId: v.id } }));\n"
+      },
+      "id": "2cd82319-cbd3-4224-a2b6-3505e2f70e0f",
+      "name": "Comment targets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/commentThreads",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet"
+            },
+            {
+              "name": "videoId",
+              "value": "={{ $json.videoId }}"
+            },
+            {
+              "name": "order",
+              "value": "relevance"
+            },
+            {
+              "name": "maxResults",
+              "value": "20"
+            },
+            {
+              "name": "textFormat",
+              "value": "plainText"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "80149d0b-1d91-437c-90ce-6d38014a2bd6",
+      "name": "YT comments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        300
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "youtubeApiKey",
+          "name": "YouTube API key"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = $now.setZone('Europe/Berlin').toFormat('yyyy-MM-dd');\nconst { minScore, minMedian, channels, outliers, fresh, smallTop = [] } = $('Score videos').first().json;\n\nconst fmt = n => Math.round(n).toLocaleString('de-DE');\nconst esc = s => String(s).replace(/\\|/g, '\\\\|').replace(/\\[/g, '\\\\[').replace(/\\]/g, '\\\\]');\nconst clean = s => String(s).replace(/\\s+/g, ' ').trim();\nconst cut = (s, n) => s.length > n ? s.slice(0, n - 1) + '…' : s;\nconst link = v => `[${esc(v.title)}](https://youtu.be/${v.id})`;\n\n// Комментарии: ответы HTTP-ноды идут в порядке Comment targets\nconst targets = $('Comment targets').all().map(i => i.json.videoId);\nconst comments = {};\n$input.all().forEach((item, i) => {\n  const id = targets[i];\n  if (!id) return;\n  comments[id] = (item.json.items || [])\n    .map(t => t.snippet.topLevelComment.snippet)\n    .sort((a, b) => b.likeCount - a.likeCount)\n    .slice(0, 10)\n    .map(s => ({ text: cut(clean(s.textDisplay), 300), likes: s.likeCount }));\n});\n\n// Каналы, которые не удалось найти по handle/id\nconst resolved = $('YT resolve channel').all();\nconst missing = $('Channels list').all()\n  .map((c, i) => ({ c: c.json, r: resolved[i] && resolved[i].json }))\n  .filter(x => !x.r || !(x.r.items || []).length)\n  .map(x => `- ${x.c.name} (\\`${x.c.id || x.c.handle}\\`)${x.r && x.r.error ? ` — ${clean(x.r.error.message || x.r.error)}` : ''}`);\n\nconst videoRow = v =>\n  `| ${v.score.toFixed(1)} | ${link(v)} | ${esc(v.channel)} | ${v.group} | ${fmt(v.views)} | ${v.publishedAt} | ${fmt(v.velocity)} |`;\nconst videoHead = [\n  '| Score | Видео | Канал | Группа | Просмотры | Опубликовано | Просм./день |',\n  '| --- | --- | --- | --- | --- | --- | --- |',\n];\n\nconst md = [\n  '---',\n  'source: \"YouTube Data API v3 через n8n (workflow trends)\"',\n  `date: ${today}`,\n  'tags:',\n  '  - тренды',\n  '  - конкуренты',\n  '---',\n  '',\n  `# Тренды по каналам-ориентирам — ${today}`,\n  '',\n  'Score = просмотры видео / медиана канала по последним 50 загрузкам. Видео короче 3 минут и моложе 3 дней не учитываются.',\n  `Каналы с медианой ниже ${fmt(minMedian)} просмотров в outlier-ы и свежие не попадают — их лучшие видео в разделе «Малые каналы».`,\n  '',\n  `## Outlier-видео (score ≥ ${minScore})`,\n  '',\n  ...(outliers.length ? [...videoHead, ...outliers.map(videoRow)] : ['_Нет видео выше порога._']),\n  '',\n  '## Свежие видео (≤ 30 дней), лучшие по score',\n  '',\n  ...(fresh.length ? [...videoHead, ...fresh.map(videoRow)] : ['_Нет свежих видео._']),\n  '',\n  ...(smallTop.length ? [\n    `## Малые каналы (медиана < ${fmt(minMedian)})`,\n    '',\n    ...videoHead,\n    ...smallTop.map(videoRow),\n    '',\n  ] : []),\n  '## Комментарии к топ-outlier-ам',\n  '',\n  ...outliers.filter(v => comments[v.id]).flatMap(v => [\n    `### ${link(v)} — ${esc(v.channel)}`,\n    '',\n    ...(comments[v.id].length\n      ? comments[v.id].map(c => `- (${c.likes} ♥) ${c.text}`)\n      : ['_Комментарии недоступны._']),\n    '',\n  ]),\n  '## Каналы',\n  '',\n  '| Канал | Группа | Подписчики | Медиана просмотров | Видео в выборке | Лучший score |',\n  '| --- | --- | --- | --- | --- | --- |',\n  ...channels.map(c =>\n    `| ${esc(c.title)}${c.small ? ' (малый)' : ''} | ${c.group} | ${fmt(c.subscribers)} | ${fmt(c.median)} | ${c.analyzed} | ${c.best.toFixed(1)} |`),\n  '',\n  ...(missing.length ? ['## Не найдены', '', ...missing, ''] : []),\n].join('\\n');\n\nreturn [{\n  json: {\n    path: `docs/raw/trends/${today}-trends.md`,\n    message: `trends: отчёт по каналам-ориентирам ${today}`,\n    content: Buffer.from(md, 'utf8').toString('base64'),\n  },\n}];\n"
+      },
+      "id": "5069267c-4e33-48db-a7c9-de436f1577df",
+      "name": "Build report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/{{ $('Config').first().json.githubOwner }}/{{ $('Config').first().json.githubRepo }}/contents/{{ $json.path }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-channel-project"
+            }
+          ]
+        },
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "ref",
+              "value": "={{ $('Config').first().json.branch }}"
+            }
+          ]
+        }
+      },
+      "id": "fbf37b0a-8215-4026-9150-26a798ac09c7",
+      "name": "GH existing file",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2880,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "githubToken",
+          "name": "GitHub token"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/{{ $('Config').first().json.githubOwner }}/{{ $('Config').first().json.githubRepo }}/contents/{{ $('Build report').first().json.path }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-channel-project"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify(Object.assign({ message: $('Build report').first().json.message, content: $('Build report').first().json.content, branch: $('Config').first().json.branch }, $json.sha ? { sha: $json.sha } : {})) }}"
+      },
+      "id": "5a6f6418-0eb0-4d7b-aba2-008faf9dde9e",
+      "name": "GH commit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "githubToken",
+          "name": "GitHub token"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Каждый понедельник 08:00": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Запуск вручную": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Channels list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Channels list": {
+      "main": [
+        [
+          {
+            "node": "YT resolve channel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT resolve channel": {
+      "main": [
+        [
+          {
+            "node": "Uploads playlists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Uploads playlists": {
+      "main": [
+        [
+          {
+            "node": "YT recent uploads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT recent uploads": {
+      "main": [
+        [
+          {
+            "node": "Video id batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video id batches": {
+      "main": [
+        [
+          {
+            "node": "YT video stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT video stats": {
+      "main": [
+        [
+          {
+            "node": "Score videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score videos": {
+      "main": [
+        [
+          {
+            "node": "Comment targets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comment targets": {
+      "main": [
+        [
+          {
+            "node": "YT comments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT comments": {
+      "main": [
+        [
+          {
+            "node": "Build report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build report": {
+      "main": [
+        [
+          {
+            "node": "GH existing file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GH existing file": {
+      "main": [
+        [
+          {
+            "node": "GH commit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin"
+  },
+  "pinData": {},
+  "active": false
+}

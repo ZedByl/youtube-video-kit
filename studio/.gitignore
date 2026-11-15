@@ -1,0 +1,7 @@
+node_modules/
+out/
+public/episodes/*/voice/
+public/episodes/*/img/
+public/episodes/*/video/
+public/episodes/*/music/
+public/episodes/*/sfx/

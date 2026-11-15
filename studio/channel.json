@@ -1,0 +1,30 @@
+{
+  "name": "MY CHANNEL",
+  "language": "en",
+  "locale": "en-US",
+  "quotes": [
+    "“",
+    "”"
+  ],
+  "subscribe": {
+    "mid": {
+      "line1": "Subscribe to My Channel",
+      "line2": "Turn on the bell"
+    },
+    "end": {
+      "line1": "Subscribe to My Channel",
+      "line2": "A new story every week"
+    },
+    "button": "Subscribe",
+    "buttonDone": "Subscribed"
+  },
+  "labels": {
+    "placeholder": "PLACEHOLDER",
+    "mapCredit": "Map: Natural Earth",
+    "chapters": "Chapters",
+    "credits": "IMAGE CREDITS",
+    "publicDomain": "public domain",
+    "creditsInComment": "Per-image credits: pinned comment.",
+    "creditsInCommentHeader": "Image credits in detail:"
+  }
+}

@@ -1,0 +1,581 @@
+{
+  "name": "channel — статистика канала → GitHub + Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "e9bf1579-3d6c-4383-a12f-ee280ec4f160",
+      "name": "Каждый день 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9cef6053-ef1d-42ab-86e0-351b322d1d93",
+      "name": "Запуск вручную",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9636021c-9ecb-4383-b8ac-3c10c0236802",
+              "name": "channelId",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "c16cc9a8-952f-48e6-9f7b-86c369eb867a",
+              "name": "githubOwner",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "0efad35e-99cc-47b3-af4c-05a4c53247c1",
+              "name": "githubRepo",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "bd8aea42-7174-4477-a2b8-afff11f9617d",
+              "name": "branch",
+              "value": "main",
+              "type": "string"
+            },
+            {
+              "id": "59904889-6dab-4afa-89f2-a9e2516d545c",
+              "name": "telegramChatId",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7ac4061d-dc56-4e85-9fbd-4b7741666ee4",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "763b9523-b56d-4540-a8f5-78332085b829",
+              "leftValue": "={{ $json.channelId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7c3fa47c-6161-4c40-bf80-aab4caafab9e",
+      "name": "Канал задан?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "58d33f61-e434-446d-8c9f-565c127bc18c",
+      "name": "Канал не задан",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        720,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/channels",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet,contentDetails,statistics"
+            },
+            {
+              "name": "id",
+              "value": "={{ $json.channelId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "03f5457a-d925-4e0a-b695-0139359e6d48",
+      "name": "YT channel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "youtubeApiKey",
+          "name": "YouTube API key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/playlistItems",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "contentDetails"
+            },
+            {
+              "name": "playlistId",
+              "value": "={{ $json.items[0].contentDetails.relatedPlaylists.uploads }}"
+            },
+            {
+              "name": "maxResults",
+              "value": "5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1a01607-5c77-457a-9704-8721007fef59",
+      "name": "YT uploads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        300
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "youtubeApiKey",
+          "name": "YouTube API key"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet,statistics"
+            },
+            {
+              "name": "id",
+              "value": "={{ ($json.items || []).map(i => i.contentDetails.videoId).join(',') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1304ba5-cb14-428a-b8d1-f67440d2e9ee",
+      "name": "YT videos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ],
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "youtubeApiKey",
+          "name": "YouTube API key"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/{{ $('Config').first().json.githubOwner }}/{{ $('Config').first().json.githubRepo }}/contents/docs/raw/stats",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-channel-project"
+            }
+          ]
+        },
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "ref",
+              "value": "={{ $('Config').first().json.branch }}"
+            }
+          ]
+        }
+      },
+      "id": "d60a9859-42de-4fa6-9735-a2637b57c479",
+      "name": "GH list stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "githubToken",
+          "name": "GitHub token"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Находит вчерашний (последний до сегодня) снимок для дельты и sha сегодняшнего файла, если запуск повторный.\nconst today = $now.setZone('Europe/Berlin').toFormat('yyyy-MM-dd');\nconst todayName = `${today}-channel-stats.md`;\nconst files = $input.all()\n  .map(i => i.json)\n  .filter(f => f && f.type === 'file' && /^\\d{4}-\\d{2}-\\d{2}-channel-stats\\.md$/.test(f.name));\nconst prev = files.filter(f => f.name < todayName).sort((a, b) => a.name.localeCompare(b.name)).pop();\nconst todayFile = files.find(f => f.name === todayName);\n\nreturn [{\n  json: {\n    today,\n    path: `docs/raw/stats/${todayName}`,\n    prevPath: prev ? prev.path : null,\n    todaySha: todayFile ? todayFile.sha : null,\n  },\n}];\n"
+      },
+      "id": "0690f542-bb6a-44fb-83d6-a9fbf1c79e77",
+      "name": "Pick previous",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/{{ $('Config').first().json.githubOwner }}/{{ $('Config').first().json.githubRepo }}/contents/{{ $json.prevPath || 'docs/raw/stats/.gitkeep' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-channel-project"
+            }
+          ]
+        },
+        "options": {},
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "ref",
+              "value": "={{ $('Config').first().json.branch }}"
+            }
+          ]
+        }
+      },
+      "id": "c7526ddc-4f29-4b33-8513-3bf1fc0bdd34",
+      "name": "GH prev snapshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1920,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "githubToken",
+          "name": "GitHub token"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cfg = $('Config').first().json;\nconst pick = $('Pick previous').first().json;\nconst ch = ($('YT channel').first().json.items || [])[0];\nif (!ch) throw new Error(`Канал ${cfg.channelId} не найден в YouTube Data API`);\nconst vids = $('YT videos').first().json.items || [];\n\n// Предыдущий снимок хранит данные в JSON-блоке в конце markdown-файла\nlet prev = null;\nconst prevFile = $('GH prev snapshot').first().json;\nif (pick.prevPath && prevFile && prevFile.content) {\n  const text = Buffer.from(prevFile.content, 'base64').toString('utf8');\n  const m = text.match(/```json\\n([\\s\\S]*?)\\n```/);\n  if (m) {\n    try { prev = JSON.parse(m[1]); } catch (e) { prev = null; }\n  }\n}\n\nconst num = v => Number(v || 0);\nconst fmt = n => n.toLocaleString('de-DE');\nconst diff = (cur, old) => (old === undefined || old === null) ? null : cur - old;\nconst signed = d => d === null ? '—' : `${d >= 0 ? '+' : ''}${fmt(d)}`;\nconst paren = d => d === null ? '' : ` (${signed(d)})`;\nconst esc = s => String(s).replace(/\\|/g, '\\\\|');\nconst html = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n\nconst snapshot = {\n  date: pick.today,\n  channelId: ch.id,\n  title: ch.snippet.title,\n  subscribers: num(ch.statistics.subscriberCount),\n  views: num(ch.statistics.viewCount),\n  videos: num(ch.statistics.videoCount),\n  latest: vids.map(v => ({\n    id: v.id,\n    title: v.snippet.title,\n    publishedAt: v.snippet.publishedAt,\n    views: num(v.statistics.viewCount),\n    likes: num(v.statistics.likeCount),\n    comments: num(v.statistics.commentCount),\n  })),\n};\n\nconst prevVideo = id => (prev && prev.latest || []).find(v => v.id === id);\nconst d = {\n  subscribers: diff(snapshot.subscribers, prev && prev.subscribers),\n  views: diff(snapshot.views, prev && prev.views),\n  videos: diff(snapshot.videos, prev && prev.videos),\n};\n\nconst md = [\n  '---',\n  'source: \"YouTube Data API v3 через n8n (workflow channel-stats)\"',\n  `date: ${pick.today}`,\n  'tags:',\n  '  - статистика',\n  '  - канал',\n  '---',\n  '',\n  `# Статистика канала — ${pick.today}`,\n  '',\n  `Канал: **${esc(snapshot.title)}** (\\`${snapshot.channelId}\\`). ${prev ? `Δ — к снимку от ${prev.date}.` : 'Предыдущего снимка нет.'}`,\n  '',\n  '| Показатель | Значение | Δ |',\n  '| --- | --- | --- |',\n  `| Подписчики | ${fmt(snapshot.subscribers)} | ${signed(d.subscribers)} |`,\n  `| Просмотры | ${fmt(snapshot.views)} | ${signed(d.views)} |`,\n  `| Видео | ${fmt(snapshot.videos)} | ${signed(d.videos)} |`,\n  '',\n  '## Последние видео',\n  '',\n  '| Видео | Опубликовано | Просмотры | Δ | Лайки | Комментарии |',\n  '| --- | --- | --- | --- | --- | --- |',\n  ...snapshot.latest.map(v => {\n    const p = prevVideo(v.id);\n    return `| [${esc(v.title)}](https://youtu.be/${v.id}) | ${v.publishedAt.slice(0, 10)} | ${fmt(v.views)} | ${signed(diff(v.views, p && p.views))} | ${fmt(v.likes)} | ${fmt(v.comments)} |`;\n  }),\n  '',\n  '## Данные',\n  '',\n  '```json',\n  JSON.stringify(snapshot, null, 2),\n  '```',\n  '',\n].join('\\n');\n\nconst telegramText = [\n  `📊 <b>${html(snapshot.title)}</b> — ${pick.today}`,\n  '',\n  `👥 Подписчики: <b>${fmt(snapshot.subscribers)}</b>${paren(d.subscribers)}`,\n  `👁 Просмотры: <b>${fmt(snapshot.views)}</b>${paren(d.views)}`,\n  `🎬 Видео: <b>${fmt(snapshot.videos)}</b>${paren(d.videos)}`,\n  ...(snapshot.latest.length ? ['', '<b>Последние видео</b>'] : []),\n  ...snapshot.latest.map(v => {\n    const p = prevVideo(v.id);\n    return `• <a href=\"https://youtu.be/${v.id}\">${html(v.title)}</a> — ${fmt(v.views)}${paren(diff(v.views, p && p.views))}`;\n  }),\n].join('\\n');\n\nconst githubBody = {\n  message: `stats: снимок канала ${pick.today}`,\n  content: Buffer.from(md, 'utf8').toString('base64'),\n  branch: cfg.branch,\n};\nif (pick.todaySha) githubBody.sha = pick.todaySha;\n\nreturn [{ json: { path: pick.path, githubBody, telegramText } }];\n"
+      },
+      "id": "4c95f424-47d0-4bcf-bbbb-71cf27814483",
+      "name": "Build snapshot",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/{{ $('Config').first().json.githubOwner }}/{{ $('Config').first().json.githubRepo }}/contents/{{ $json.path }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-channel-project"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.githubBody) }}"
+      },
+      "id": "573bd192-c05d-4df0-8743-02e35780e436",
+      "name": "GH commit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "githubToken",
+          "name": "GitHub token"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Config').first().json.telegramChatId }}",
+        "text": "={{ $('Build snapshot').first().json.telegramText + ($json.error ? '\\n\\n⚠️ Снимок не сохранён в GitHub' : '') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "c149b36f-427e-4c10-9db9-7c853ad72349",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2640,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegramBot",
+          "name": "Telegram bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Каждый день 09:00": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Запуск вручную": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Канал задан?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Канал задан?": {
+      "main": [
+        [
+          {
+            "node": "YT channel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Канал не задан",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT channel": {
+      "main": [
+        [
+          {
+            "node": "YT uploads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT uploads": {
+      "main": [
+        [
+          {
+            "node": "YT videos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YT videos": {
+      "main": [
+        [
+          {
+            "node": "GH list stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GH list stats": {
+      "main": [
+        [
+          {
+            "node": "Pick previous",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick previous": {
+      "main": [
+        [
+          {
+            "node": "GH prev snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GH prev snapshot": {
+      "main": [
+        [
+          {
+            "node": "Build snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build snapshot": {
+      "main": [
+        [
+          {
+            "node": "GH commit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GH commit": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Berlin"
+  },
+  "pinData": {},
+  "active": false
+}

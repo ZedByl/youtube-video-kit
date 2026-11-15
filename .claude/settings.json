@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run timeline:*)",
+      "Bash(npm run check:*)",
+      "Bash(npm run where:*)",
+      "Bash(npm run render:block:*)",
+      "Bash(npm run qa:*)",
+      "Bash(npm run tts:placeholder:*)",
+      "Bash(npm run meta:*)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run find-assets:*)"
+    ]
+  }
+}
